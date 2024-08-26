@@ -17,9 +17,11 @@ from models.models import Assignment, Volunteer, Substitution, VolunteerRecord
 from staff.forms import VolunteerUserForm, AddressForm
 from staff.views.email import send_email, reset_password
 
+
 import csv
 import datetime
 import time
+
 
 log = getLogger(__name__)
 
@@ -51,10 +53,10 @@ def create_volunteer(request):
             # volunteer
             vol = Volunteer.objects.get(user=user)
             vol.address = address
-            vol.save()
             other_vol_form = VolunteerForm(request.POST, instance=vol)
-            other_vol_form.save()
-
+            vol = other_vol_form.save(commit=False)
+            vol.active = True
+            vol.save()
             # send password reset email
             reset_password(email, request)
 
@@ -62,7 +64,7 @@ def create_volunteer(request):
 
     else:
         user_form = SignUpForm()
-        vol_form = VolunteerForm()
+        vol_form = VolunteerForm(initial={'active':True})
         addr_form = AddressForm()
     context = {
         "user_form": user_form,
@@ -179,15 +181,28 @@ def export_volunteers(request):
     filename = "volunteer-export-" + today + ".csv"
     response["Content-Disposition"] = 'attachment; filename="' + filename + '"'
 
-    blank_volunteer = Volunteer()
-    field_names = [field.name for field in blank_volunteer._meta.fields]
+    user_fields = ["email", "first_name", "last_name"]
+    volunteer_fields = ["id", "active", "organization","address","home_phone","cell_phone","work_phone","birth_date","notes","join_date","number_of_people","dont_email", "end_date", "end_reason"]
 
     writer = csv.writer(response)
-    writer.writerow(field_names)
+    writer.writerow(user_fields + volunteer_fields + ["last_job"])
 
     volunteers = Volunteer.objects.all()
 
+
     for obj in volunteers:
-        writer.writerow([getattr(obj, field) for field in field_names])
+        last_job = None
+        record = VolunteerRecord.objects.filter(volunteer=obj).last()
+        if record is not None:
+            last_job = record.date
+        # get associated user fields
+        data = []
+        for field in user_fields:
+            data.append(getattr(obj.user, field))
+        for field in volunteer_fields:
+            data.append(getattr(obj, field))
+        
+        data.append(last_job)
+        writer.writerow(data)
 
     return response

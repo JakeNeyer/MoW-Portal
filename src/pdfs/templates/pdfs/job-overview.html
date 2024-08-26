@@ -2,20 +2,22 @@
 <h1 style="font-weight: bold;">MOW Job Overview Report</h1>
 <h5>Generated: {{today|date:'l, M. d, Y'}} at {{today|time:'h:i a'}}</h5>
 <h5>** denotes volunteering via substitution</h5>
-{%for d in dates%}
-        {% for jt in d.job_types %}
-            <h3 style="font-weight: bold;">{{jt.job_type.name}} ({{d.date|date:'l, M. d, Y'}})</h3>
+{%for c in context%}
+        {% for jt in c.job_types %}
+            <h3 style="font-weight: bold;">{{jt.job_type_name}} ({{c.date|date:'l, M. d, Y'}})</h3>
             <table class="table table-condensed">
                 <thead>
                     <th class="col-xs-4"><b>Job Name</b></th>
                     <th class="col-xs-8"><b>Volunteers</b></th>
+                    <th class="col-xs-8"><b>Clients</b></th>
+                    <th class="col-xs-8"><b>Meals</b></th>
                 </thead>
                 <tbody>
                 {% for j in jt.jobs %}
                     <tr>
-                        <td class="col-xs-4">{{j.job.name}}</td>
+                        <td class="col-xs-4">{{j.job.job.name}}</td>
                         <td class="col-xs-8">
-                            {% for person in j.todays_volunteers %}
+                            {% for person in j.job.todays_volunteers %}
                                 {% if person.sub_pk %}
                                     {% if person.name == open_substitution %}
                                         {{open_substitution}}{% if not forloop.last %},{% endif %}
@@ -30,6 +32,8 @@
                                 {{unassigned_job}}
                             {% endfor%}
                         </td>
+                        <td class="col-xs-4">{{j.number_of_customers}}</td>
+                        <td class="col-xs-4">{{j.total_meals}}</td>
                     </tr>
                 {% empty %}
                 <td>Nothing to display.</td><td></td>

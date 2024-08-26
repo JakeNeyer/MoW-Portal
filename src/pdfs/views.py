@@ -39,19 +39,21 @@ customer_feedback_fields = ["Date", "Route Number", "Client",
                             "Delivery Status", "Client Status", "Notes", "Volunteer"]
 
 
-def to_pdf(html, styleSheetPath=None):
+def to_pdf(html, styleSheetPath=None, options=None):
     global _display
     if not _display:
         _display = Display(visible=0, size=(320, 240)).start()
-    options = {
-        "page-size": "Letter",
-        "margin-top": "0.74in",
-        "margin-right": "0.39in",
-        "margin-bottom": "0.39in",
-        "margin-left": "0.39in",
-        "print-media-type": True,
-        "user-style-sheet": styleSheetPath
-    }
+    if not options:
+        options = {
+            "page-size": "Letter",
+            "margin-top": "0.74in",
+            "margin-right": "0.39in",
+            "margin-bottom": "0.39in",
+            "margin-left": "0.39in",
+            "footer-right": "[page] of [topage]",
+            "print-media-type": True,
+            "user-style-sheet": styleSheetPath
+        }
 
     pdf = pdfkit.from_string(html, False, options)
 
@@ -212,13 +214,33 @@ def job_overview_report(request, begin_date, end_date):
     begin_date_datetime = datetime.datetime.strptime(begin_date, "%m-%d-%Y")
     end_date_datetime = datetime.datetime.strptime(end_date, "%m-%d-%Y")
     dates = actuals_to_display(
-        begin_date_datetime, end_date_datetime + datetime.timedelta(days=1)
+        begin_date_datetime, end_date_datetime + datetime.timedelta(days=1),
+        skip_unfilled_end=True
     )
+
+    context = []
+    for d in dates:
+        job_types = []
+        for jt in d.job_types:
+          details = {"job_type_name": jt.job_type.name}
+          jobs = []
+          for job in jt.jobs:
+            total_num_meals = 0
+            customers = Customer.objects.filter(route=job.route_number)
+            for c in customers:
+                num_meals = c.num_meals_on_day(d.date)
+                total_num_meals += num_meals
+            jobs.append({"job": job, "number_of_customers": len(customers), "total_meals": total_num_meals})
+            details["jobs"] = jobs
+
+          job_types.append(details)
+        context.append({"date": d.date, "job_types": job_types})
+    
     template = get_template("pdfs/job-overview.html")
     return to_pdf(
         template.render(
             {
-                "dates": dates,
+                "context": context,
                 "open_substitution": OPEN_SUBSTITUTION,
                 "unassigned_job": UNASSIGNED_JOB,
             }
@@ -321,6 +343,7 @@ def monthly_billing_report(request, begin_date, end_date):
             date__lte=end_date) .values("date") .annotate(
             total_meals=Sum("num_meals")) .order_by("date"))
 
+    print(date_meals_query)
     # Convert the QuerySet to a usable dictionary
     date_meals = {}
     total = 0
@@ -336,8 +359,10 @@ def monthly_billing_report(request, begin_date, end_date):
         CustomerRecord.objects.filter(
             num_meals__gte=1,
             date__gte=begin_date,
-            date__lte=end_date) .values(
-            "customer",
+            date__lte=end_date).select_related('customer').values(
+            "customer__id",
+            "customer__first_name",
+            "customer__last_name",
             "payment_type",
             "route_assigned") .annotate(
                 total_meals=Sum("num_meals")) .order_by("payment_type"))
@@ -576,6 +601,10 @@ def generate_routes_report(request, date):
         for c in custs:
             total_meals += c.num_meals_on_day(date)
 
+
+        if total_meals < 1:
+            continue
+
         # Append to data
         data.append({"route": route, "customer_list": custs,
                      "total_meals": total_meals, "date": date, "vols": vols})
@@ -583,4 +612,12 @@ def generate_routes_report(request, date):
     template = get_template("pdfs/generate-routes-report.html")
     context = {"data": data}
 
-    return to_pdf(template.render(context), '/collected-static/pdfs/route_all_pdf.css')
+    return to_pdf(template.render(context), options = {
+            "page-size": "Letter",
+            "margin-top": "0.74in",
+            "margin-right": "0.39in",
+            "margin-bottom": "0.39in",
+            "margin-left": "0.39in",
+            "footer-right": "[page] of [topage]",
+            "user-style-sheet": '/collected-static/pdfs/route_all_pdf.css'
+        })

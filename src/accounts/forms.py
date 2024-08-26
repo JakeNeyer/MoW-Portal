@@ -79,9 +79,13 @@ class VolunteerForm(ModelForm):
             "work_phone",
             "birth_date",
             "join_date",
+            "active",
+            "end_date",
+            "end_reason",
             "notes",
         ]
         widgets = {
             "birth_date": DateInput(format=("%Y-%m-%d")),
             "join_date": DateInput(format=("%Y-%m-%d")),
+            "end_date": DateInput(format=("%Y-%m-%d")),
         }

@@ -71,7 +71,7 @@ def manage_customers(request):
     will bring up all custome
     """
     # get all the substitutions in the DB from today on
-    all_customers = Customer.objects.all().order_by("first_name", "last_name")
+    all_customers = Customer.objects.all().order_by("last_name", "first_name")
     return render(request, "manage-customers.html", {"cstmrs": all_customers})
 
 
@@ -152,7 +152,7 @@ def export_customers(request):
     writer = csv.writer(response)
     writer.writerow(field_names)
 
-    customers = Customer.objects.filter(active=1)
+    customers = Customer.objects.all().order_by("last_name", "first_name")
 
     for obj in customers:
         writer.writerow([getattr(obj, field) for field in field_names])

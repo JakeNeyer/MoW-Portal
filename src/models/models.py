@@ -93,6 +93,9 @@ class Volunteer(models.Model):
     birth_date = models.DateField(null=True, blank=True)
     notes = models.TextField(default="", blank=True)
     join_date = models.DateField(default=date.today)
+    end_date=models.DateField(null=True, blank=True)
+    end_reason = models.TextField(default="", blank=True)
+    active = models.BooleanField(default=True)
     number_of_people = models.IntegerField(default=1)
     dont_email = models.BooleanField(default=False)
 

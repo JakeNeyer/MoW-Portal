@@ -89,3 +89,8 @@ register.filter("getCustomer", getCustomer)
 register.filter("getItem", getItem)
 register.filter("numMealsOnDay", numMealsOnDay)
 register.filter("getRange", getRange)
+
+@register.filter
+def sort_name(val, args):
+    x, y = args.split(',')
+    return sorted(val, key=lambda item: (item[x].lower(), item[y].lower()))

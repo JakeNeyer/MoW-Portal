@@ -56,9 +56,9 @@
                     <th class="col-xs-6">Route</th>
                 </thead>
                 <tbody>
-                {% for reportday in reportday_section %}
+                {% for reportday in reportday_section|sort_name:"customer__last_name,customer__first_name" %}
                     <tr>
-                        <td>{{ reportday.customer|getCustomer }}</td>
+                        <td>{{ reportday.customer__first_name }} {{ reportday.customer__last_name }}</td>
                         <td>{{ reportday.total_meals }}</td>
                         <td>{{ reportday.payment_type|getPayment }}</td>
                         <td>{{ reportday.route_assigned|getRoute }}</td>

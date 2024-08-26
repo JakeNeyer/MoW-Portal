@@ -134,6 +134,7 @@ def actuals_to_display(
     original=NO_FILTER_SENTINAL,
     job=NO_FILTER_SENTINAL,
     exclude_unfilled=False,
+    skip_unfilled_end=False,
     **kwargs,  # support future changes to actuals() interface
 ):
     actuals = Assignment.actuals(
@@ -186,7 +187,7 @@ def actuals_to_display(
             dates[dIndex].emails.add(a.volunteer.user.email)
 
     # insert unfilled jobs to the end
-    if "a" in locals():
+    if "a" in locals() and not skip_unfilled_end:
         for ji in range(jobs_index, len(all_jobs)):
             job_struct = populate_structs(dates, a.date, all_jobs[ji])
 
