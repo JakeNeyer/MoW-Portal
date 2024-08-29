@@ -343,7 +343,6 @@ def monthly_billing_report(request, begin_date, end_date):
             date__lte=end_date) .values("date") .annotate(
             total_meals=Sum("num_meals")) .order_by("date"))
 
-    print(date_meals_query)
     # Convert the QuerySet to a usable dictionary
     date_meals = {}
     total = 0
